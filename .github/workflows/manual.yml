@@ -1,0 +1,40 @@
+name: manual 
+
+on:
+  workflow_dispatch:
+    inputs:
+        A:
+          type: boolean
+          description: 'A'
+        B:
+          type: boolean
+          description: 'B'
+        C:
+          type: boolean
+          description: 'C'
+
+jobs:
+
+  format-input:
+    runs-on: ubuntu-latest
+    outputs:
+      projects: ${{ steps.projects.outputs.projects }}
+    steps:
+      - id: projects
+        run: |
+          echo "::set-output name=projects::$( \
+            echo '${{ toJSON(inputs) }}' \
+            | jq -c 'to_entries | map(select(.value == true).key)' \
+          )";
+
+  run-selection:
+    needs: format-input
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project: ${{ fromJSON(needs.format-input.outputs.projects) }}
+    steps:
+      - uses: actions/checkout@v3
+      - shell: bash
+        run: echo "building ${{ matrix.project }} ..."
+
